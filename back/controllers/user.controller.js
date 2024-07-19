@@ -1,59 +1,55 @@
 import User from "../models/usermodel.js";
-import Token from '../Utils/jeneratetoken.js'
-import bcryptjs from 'bcryptjs'
-//registration for users 
-export const registeruser=async (req,res)=>{
+import Token from "../Utils/jeneratetoken.js";
+import bcryptjs from "bcryptjs";
+//registration for users
+export const registeruser = async (req, res) => {
+  try {
+    const { password, username, fullname, gender } = req.body;
+    const incominguser = await User.findOne({ username });
 
-   try{
+    if (incominguser) {
+      return res
+        .status(400)
+        .send("there is alreadey a user with this username!");
+    }
 
-    const {password,username,fullname,gender}=req.body;
-   const incominguser=await User.findOne({username});
+    // i will hash the password here
+    const salt = await bcryptjs.genSalt(10);
+    const hashedpassword = await bcryptjs.hash(password, salt);
+    //the images are form   https://avatar-placeholder.iran.liara.run/
+    const boyprofilepic = "https://avatar.iran.liara.run/public";
+    const girlprofilepic = "https://avatar.iran.liara.run/public/girl";
 
-   if(incominguser){
-    return res.status(400).send("there is alreadey a user with this username!")
-   }
+    const adduser = new User.create({
+      fullname,
+      username,
+      password: hashedpassword,
+      gender,
+      profilepic: gender == "male" ? boyprofilepic : girlprofilepic,
+    });
 
-// i will hash the password here 
-const salt=await bcryptjs.genSalt(10)
-const hashedpassword=await bcryptjs.hash(password,salt)
-//the images are form   https://avatar-placeholder.iran.liara.run/
-const boyprofilepic='https://avatar.iran.liara.run/public'
-const girlprofilepic='https://avatar.iran.liara.run/public/girl'
-
-const adduser=new User.create({
-    fullname,username,password:hashedpassword,gender,profilepic:gender=="male" ? boyprofilepic:girlprofilepic
-})
-
-if(adduser){
-    await adduser.save()
-   res.status(201).send({
-    _id:adduser._id,
-    fullname:adduser.fullname,
-    username:adduser.username,
-    profilepic:adduser.profilepic
-
-})
-//generating the jwt here 
-
-
-}
-
-}
-catch(error){
- console.log(error);
- res.status(500).send("internal server error ")
-    
-}
-
-}
+    if (adduser) {
+      //generate token here
+      Token(adduser._id, res);
+      await adduser.save();
+      res.status(201).send({
+        _id: adduser._id,
+        fullname: adduser.fullname,
+        username: adduser.username,
+        profilepic: adduser.profilepic,
+      });
+      //generating the jwt here
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("internal server error ");
+  }
+};
 //for login users
-export const login=(req,res)=>{
-    res.send("login page")
-}
+export const login = (req, res) => {
+  res.send("login page");
+};
 //for logout
-export const logout=(req,res)=>{
-    res.send("logout page")
-}
-
-
-
+export const logout = (req, res) => {
+  res.send("logout page");
+};
